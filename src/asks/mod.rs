@@ -1,6 +1,12 @@
+#[cfg(feature = "serde")]
+mod deserialize;
+
 use super::{ops::AggregatedInsert, PriceAndQuantity};
+#[cfg(feature = "serde")]
+use serde::Serialize;
 use std::ops::{Add, Deref, DerefMut};
 
+#[cfg_attr(feature = "serde", derive(Serialize))]
 #[derive(PartialEq, Clone, Debug)]
 pub struct Asks<P = f64, Q = f64>(Vec<PriceAndQuantity<P, Q>>);
 
