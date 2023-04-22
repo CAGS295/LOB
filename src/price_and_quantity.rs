@@ -1,12 +1,45 @@
 #[cfg(feature = "serde")]
-use serde::{Deserialize, Serialize};
-use std::ops::Add;
+use serde::{de, de::Visitor, Deserialize, Deserializer, Serialize};
+use std::fmt::{self, Display};
+use std::{marker::PhantomData, ops::Add, str::FromStr};
 
 #[cfg_attr(feature = "serde", derive(Deserialize), derive(Serialize))]
 #[derive(Clone, Debug, PartialEq, Default)]
 ///Careful, this struct manually implements Add which in this context, is not commutative. It adds quantity while copying the rhs' price.
 /// If prices are not equal, it is also not associative; Adding quantities from different price levels is not a sound operation.
-pub struct PriceAndQuantity<P, Q>(pub P, pub Q);
+pub struct PriceAndQuantity<P, Q>(
+    #[serde(deserialize_with = "de_from_str")]
+    #[serde(bound(deserialize = "P: FromStr, P::Err: Display"))]
+    pub P,
+    #[serde(deserialize_with = "de_from_str")]
+    #[serde(bound(deserialize = "Q: FromStr, Q::Err: Display"))]
+    pub Q,
+);
+
+fn de_from_str<'de, D, T: FromStr>(deserializer: D) -> Result<T, D::Error>
+where
+    D: Deserializer<'de>,
+    T::Err: Display,
+{
+    struct NumberFromStr<V>(PhantomData<V>);
+
+    impl<'de, Error: Display, V: FromStr<Err = Error>> Visitor<'de> for NumberFromStr<V> {
+        type Value = V;
+
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            formatter.write_str(r#"a string containing "float" or "number""#)
+        }
+
+        fn visit_str<E>(self, s: &str) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            Self::Value::from_str(s).map_err(de::Error::custom)
+        }
+    }
+
+    deserializer.deserialize_str(NumberFromStr::<T>(PhantomData))
+}
 
 impl<P, Q> AsRef<P> for PriceAndQuantity<P, Q> {
     fn as_ref(&self) -> &P {
