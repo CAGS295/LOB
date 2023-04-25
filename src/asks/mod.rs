@@ -7,7 +7,7 @@ use serde::Serialize;
 use std::ops::{Add, Deref, DerefMut};
 
 #[cfg_attr(feature = "serde", derive(Serialize))]
-#[derive(PartialEq, Clone, Debug)]
+#[derive(PartialEq, Clone, Debug, Default)]
 pub struct Asks<P = f64, Q = f64>(Vec<PriceAndQuantity<P, Q>>);
 
 impl<P, Q> From<Vec<PriceAndQuantity<P, Q>>> for Asks<P, Q> {
