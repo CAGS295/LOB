@@ -22,3 +22,18 @@ impl LimitOrderBook {
         }
     }
 }
+
+#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[derive(PartialEq, Debug, Clone, Default)]
+pub struct DepthUpdate {
+    #[serde(alias = "E")]
+    timestamp: usize,
+    #[serde(alias = "U")]
+    first_update_id: usize,
+    #[serde(alias = "u")]
+    last_update_id: usize,
+    #[serde(alias = "b")]
+    bids: Bids,
+    #[serde(alias = "a")]
+    asks: Asks,
+}

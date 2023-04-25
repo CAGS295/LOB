@@ -6,8 +6,8 @@ mod price_and_quantity;
 
 use asks::Asks;
 use bids::Bids;
-pub use limit_order_book::LimitOrderBook;
-use price_and_quantity::PriceAndQuantity;
+pub use limit_order_book::{DepthUpdate, LimitOrderBook};
+pub use price_and_quantity::PriceAndQuantity;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum OrderType {
