@@ -1,11 +1,24 @@
 use std::ops::{Add, DerefMut};
 
+pub mod update_strategies {
+    pub trait Strategy {}
+
+    impl Strategy for AggregateOrCreate {}
+    impl Strategy for ReplaceOrRemove {}
+    /// Inserts `Tuple` type into the vector or aggregates if it already exists.
+    pub struct AggregateOrCreate;
+
+    /// Replaces `Tuple` type into the vector or remove it if `Remove::remove()`.
+    pub struct ReplaceOrRemove;
+}
+
+use update_strategies::Strategy;
+
 ///This is a trait for an aggregated insert operation.
 /// It defines a GAT that takes two type parameters Price and Quantity.
-pub(super) trait AggregatedInsert {
+pub trait Update<S: Strategy> {
     type Tuple<Price, Quantity>;
 
-    /// Inserts a Price-quantity type into the vector and aggregates if it already exists.
     /// The `partition_point` method is called on the vector to find the index at which the new `Tuple` should be inserted.
     /// If a matching `Tuple` is found at the index returned by `partition_point`, the quantities are added together and the updated `Tuple` is inserted at that index. Otherwise, the new `Tuple` is inserted at the index.
     fn insert<P, Q>(prices: &mut Self, price_and_quantity: Self::Tuple<P, Q>)

@@ -1,11 +1,10 @@
+use super::Asks;
+use super::PriceAndQuantity;
+use super::Update;
+use serde::{Deserialize, Deserializer as DeserializerT};
 use std::fmt::Display;
 use std::ops::Add;
 use std::str::FromStr;
-
-use super::AggregatedInsert;
-use super::Asks;
-use super::PriceAndQuantity;
-use serde::{Deserialize, Deserializer as DeserializerT};
 
 // Naive deserialization, consider implementing a visitor to stream json values instead of deseralizing into a vec and draining into the output type.
 impl<'de, P, Q> Deserialize<'de> for Asks<P, Q>
@@ -22,7 +21,7 @@ where
         let mut prices: Vec<PriceAndQuantity<P, Q>> = Deserialize::deserialize(deserializer)?;
         let mut asks = Asks::new();
         for i in prices.drain(..) {
-            AggregatedInsert::insert(&mut asks, i)
+            Update::insert(&mut asks, i)
         }
         Ok(asks)
     }
