@@ -1,12 +1,12 @@
 #[cfg(feature = "serde")]
 mod deserialize;
 
-use crate::ops::{update_strategies::Strategy, BinarySearchPredicate};
-
+use super::ops::Updatable;
 use super::{
     ops::{update_strategies::AggregateOrCreate, Update},
     PriceAndQuantity,
 };
+use crate::ops::{update_strategies::Strategy, BinarySearchPredicate};
 #[cfg(feature = "serde")]
 use serde::Serialize;
 use std::ops::{Add, Deref, DerefMut};
@@ -44,7 +44,7 @@ impl<P, Q> Asks<P, Q> {
 impl<P, Q> Asks<P, Q>
 where
     P: Clone + PartialOrd,
-    Q: Clone + Add<Output = Q>,
+    Q: Clone + Add<Output = Q> + PartialEq + Default,
 {
     pub fn add_ask<S>(&mut self, ask: PriceAndQuantity<P, Q>)
     where
@@ -61,43 +61,43 @@ impl<P, Q> BinarySearchPredicate for Asks<P, Q> {
     }
 }
 
-impl<P, Q> Update<AggregateOrCreate> for Asks<P, Q> {
-    type Tuple<Price, Quantity> = PriceAndQuantity<Price, Quantity>;
-}
+impl<P, Q> Updatable for Asks<P, Q> {}
 
 #[cfg(test)]
 mod test {
+    use crate::ops::update_strategies::ReplaceOrRemove;
+
     use super::*;
 
     #[test]
     fn lesser_asks_are_pushed_back_asc() {
         let mut asks = Asks::new();
-        asks.add_ask(PriceAndQuantity(0., 0.));
-        asks.add_ask(PriceAndQuantity(1., 0.));
-        assert_eq!(asks.0, [PriceAndQuantity(1., 0.), PriceAndQuantity(0., 0.)]);
+        asks.add_ask::<AggregateOrCreate>(PriceAndQuantity(0., 1.));
+        asks.add_ask::<AggregateOrCreate>(PriceAndQuantity(1., 1.));
+        assert_eq!(asks.0, [PriceAndQuantity(1., 1.), PriceAndQuantity(0., 1.)]);
     }
 
     #[test]
     fn lesser_asks_are_pushed_back_desc() {
         let mut asks = Asks::new();
-        asks.add_ask(PriceAndQuantity(1., 0.));
-        asks.add_ask(PriceAndQuantity(0., 0.));
-        assert_eq!(asks.0, [PriceAndQuantity(1., 0.), PriceAndQuantity(0., 0.)]);
+        asks.add_ask::<AggregateOrCreate>(PriceAndQuantity(1., 1.));
+        asks.add_ask::<AggregateOrCreate>(PriceAndQuantity(0., 1.));
+        assert_eq!(asks.0, [PriceAndQuantity(1., 1.), PriceAndQuantity(0., 1.)]);
     }
 
     #[test]
     fn insert_with_strategy_replace_or_remove() {
         let mut asks = Asks::new();
-        asks.add_ask(PriceAndQuantity(1., 1));
-        asks.add_ask(PriceAndQuantity(1., 2));
+        asks.add_ask::<ReplaceOrRemove>(PriceAndQuantity(1., 1));
+        asks.add_ask::<ReplaceOrRemove>(PriceAndQuantity(1., 2));
         assert_eq!(asks.0, [PriceAndQuantity(1., 2)]);
     }
 
     #[test]
     fn insert_with_strategy_aggregate_or_create() {
         let mut asks = Asks::new();
-        asks.add_ask(PriceAndQuantity(1., 1));
-        asks.add_ask(PriceAndQuantity(1., 2));
+        asks.add_ask::<AggregateOrCreate>(PriceAndQuantity(1., 1));
+        asks.add_ask::<AggregateOrCreate>(PriceAndQuantity(1., 2));
         assert_eq!(asks.0, [PriceAndQuantity(1., 3)]);
     }
 }

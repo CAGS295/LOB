@@ -1,18 +1,19 @@
+use super::Bids;
+use super::PriceAndQuantity;
+use super::Update;
+use crate::ops::update_strategies::AggregateOrCreate;
+use serde::{Deserialize, Deserializer as DeserializerT};
 use std::fmt::Display;
 use std::ops::Add;
 use std::str::FromStr;
 
-use super::Bids;
-use super::PriceAndQuantity;
-use super::Update;
-use serde::{Deserialize, Deserializer as DeserializerT};
-
-// Naive deserialization, consider implementing a visitor to stream json values instead of deseralizing into a vec and draining into the output type.
+/// Naive deserialization, consider implementing a visitor to stream json values instead of deseralizing into a vec and draining into the output type.
+/// It uses the [AggregateOrCreate](super::AggregateOrCreate) strategy to fill the vec.
 impl<'de, P, Q> Deserialize<'de> for Bids<P, Q>
 where
     P: Deserialize<'de> + PartialOrd + Clone + FromStr,
     P::Err: Display,
-    Q: Deserialize<'de> + Add<Output = Q> + Clone + FromStr,
+    Q: Deserialize<'de> + Add<Output = Q> + Clone + FromStr + Default + PartialEq,
     Q::Err: Display,
 {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
@@ -22,7 +23,7 @@ where
         let mut prices: Vec<PriceAndQuantity<P, Q>> = Deserialize::deserialize(deserializer)?;
         let mut bids = Bids::new();
         for i in prices.drain(..) {
-            Update::insert(&mut bids, i)
+            Update::<AggregateOrCreate>::insert(&mut bids, i)
         }
         Ok(bids)
     }
