@@ -84,4 +84,20 @@ mod test {
         asks.add_ask(PriceAndQuantity(0., 0.));
         assert_eq!(asks.0, [PriceAndQuantity(1., 0.), PriceAndQuantity(0., 0.)]);
     }
+
+    #[test]
+    fn insert_with_strategy_replace_or_remove() {
+        let mut asks = Asks::new();
+        asks.add_ask(PriceAndQuantity(1., 1));
+        asks.add_ask(PriceAndQuantity(1., 2));
+        assert_eq!(asks.0, [PriceAndQuantity(1., 2)]);
+    }
+
+    #[test]
+    fn insert_with_strategy_aggregate_or_create() {
+        let mut asks = Asks::new();
+        asks.add_ask(PriceAndQuantity(1., 1));
+        asks.add_ask(PriceAndQuantity(1., 2));
+        assert_eq!(asks.0, [PriceAndQuantity(1., 3)]);
+    }
 }

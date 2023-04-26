@@ -84,4 +84,20 @@ mod test {
         bids.add_bid(PriceAndQuantity(0., 0));
         assert_eq!(bids.0, [PriceAndQuantity(0., 0), PriceAndQuantity(1., 0)]);
     }
+
+    #[test]
+    fn insert_with_strategy_replace_or_remove() {
+        let mut bids = Bids::new();
+        bids.add_bid(PriceAndQuantity(1., 1));
+        bids.add_bid(PriceAndQuantity(1., 2));
+        assert_eq!(bids.0, [PriceAndQuantity(1., 2)]);
+    }
+
+    #[test]
+    fn insert_with_strategy_aggregate_or_create() {
+        let mut bids = Bids::new();
+        bids.add_bid(PriceAndQuantity(1., 1));
+        bids.add_bid(PriceAndQuantity(1., 2));
+        assert_eq!(bids.0, [PriceAndQuantity(1., 3)]);
+    }
 }
