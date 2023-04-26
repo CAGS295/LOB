@@ -1,7 +1,12 @@
 #[cfg(feature = "serde")]
 mod deserialize;
 
-use super::{ops::AggregatedInsert, PriceAndQuantity};
+use crate::ops::update_strategies::Strategy;
+
+use super::{
+    ops::{update_strategies::AggregateOrCreate, Update},
+    PriceAndQuantity,
+};
 #[cfg(feature = "serde")]
 use serde::Serialize;
 use std::ops::{Add, Deref, DerefMut};
@@ -41,12 +46,16 @@ where
     P: Clone + PartialOrd,
     Q: Clone + Add<Output = Q>,
 {
-    pub fn add_ask(&mut self, ask: PriceAndQuantity<P, Q>) {
-        AggregatedInsert::insert(self, ask)
+    pub fn add_ask<S>(&mut self, ask: PriceAndQuantity<P, Q>)
+    where
+        S: Strategy,
+        Self: Update<S, Tuple<P, Q> = PriceAndQuantity<P, Q>>,
+    {
+        Update::insert::<P, Q>(self, ask)
     }
 }
 
-impl<P, Q> AggregatedInsert for Asks<P, Q> {
+impl<P, Q> Update<AggregateOrCreate> for Asks<P, Q> {
     type Tuple<Price, Quantity> = PriceAndQuantity<Price, Quantity>;
     fn partition_predicate<Price: PartialOrd>(lhs: &Price, rhs: &Price) -> bool {
         rhs < lhs
