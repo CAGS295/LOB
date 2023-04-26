@@ -5,7 +5,7 @@ use std::{marker::PhantomData, ops::Add, str::FromStr};
 
 #[cfg_attr(feature = "serde", derive(Deserialize), derive(Serialize))]
 #[derive(Clone, Debug, PartialEq, Default)]
-///Careful, this struct manually implements Add which in this context, is not commutative. It adds quantity while copying the rhs' price.
+///Careful, this struct manually implements [Add] which in this context, is not commutative. It adds quantity while copying the rhs' price.
 /// If prices are not equal, it is also not associative; Adding quantities from different price levels is not a sound operation.
 pub struct PriceAndQuantity<P, Q>(
     #[serde(deserialize_with = "de_from_str")]
@@ -15,6 +15,32 @@ pub struct PriceAndQuantity<P, Q>(
     #[serde(bound(deserialize = "Q: FromStr, Q::Err: Display"))]
     pub Q,
 );
+
+pub trait Price {
+    type P;
+    fn to_ref(&self) -> &Self::P;
+}
+
+pub trait Quantity {
+    type Q;
+    fn to_ref(&self) -> &Self::Q;
+}
+
+impl<P, Q> Price for PriceAndQuantity<P, Q> {
+    type P = P;
+
+    fn to_ref(&self) -> &Self::P {
+        &self.0
+    }
+}
+
+impl<P, Q> Quantity for PriceAndQuantity<P, Q> {
+    type Q = Q;
+
+    fn to_ref(&self) -> &Self::Q {
+        &self.1
+    }
+}
 
 fn de_from_str<'de, D, T: FromStr>(deserializer: D) -> Result<T, D::Error>
 where
@@ -39,12 +65,6 @@ where
     }
 
     deserializer.deserialize_str(NumberFromStr::<T>(PhantomData))
-}
-
-impl<P, Q> AsRef<P> for PriceAndQuantity<P, Q> {
-    fn as_ref(&self) -> &P {
-        &self.0
-    }
 }
 
 ///Not commutative. It adds quantity while copying the rhs' price. Also, not associative if prices differ.
