@@ -1,7 +1,10 @@
 #[cfg(feature = "serde")]
 mod deserializer;
 
-use crate::ops::update_strategies::{AggregateOrCreate, Strategy};
+use crate::ops::{
+    update_strategies::{AggregateOrCreate, Strategy},
+    BinarySearchPredicate,
+};
 
 use super::{ops::Update, PriceAndQuantity};
 #[cfg(feature = "serde")]
@@ -52,11 +55,14 @@ where
     }
 }
 
-impl<P, Q> Update<AggregateOrCreate> for Bids<P, Q> {
-    type Tuple<Price, Quantity> = PriceAndQuantity<Price, Quantity>;
+impl<P, Q> BinarySearchPredicate for Bids<P, Q> {
     fn partition_predicate<Price: PartialOrd>(lhs: &Price, rhs: &Price) -> bool {
         rhs > lhs
     }
+}
+
+impl<P, Q> Update<AggregateOrCreate> for Bids<P, Q> {
+    type Tuple<Price, Quantity> = PriceAndQuantity<Price, Quantity>;
 }
 
 #[cfg(test)]
