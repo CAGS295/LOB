@@ -1,3 +1,4 @@
+use super::AggregateOrCreate;
 use super::Asks;
 use super::PriceAndQuantity;
 use super::Update;
@@ -6,13 +7,15 @@ use std::fmt::Display;
 use std::ops::Add;
 use std::str::FromStr;
 
-// Naive deserialization, consider implementing a visitor to stream json values instead of deseralizing into a vec and draining into the output type.
+/// Naive deserialization, consider implementing a visitor to stream json values instead of deseralizing into a vec and draining into the output type.
+/// It uses the [AggregateOrCreate](super::AggregateOrCreate) strategy to fill the vec.
 impl<'de, P, Q> Deserialize<'de> for Asks<P, Q>
 where
     P: Deserialize<'de> + PartialOrd + Clone + FromStr,
     P::Err: Display,
-    Q: Deserialize<'de> + Add<Output = Q> + Clone + FromStr,
+    Q: Deserialize<'de> + Add<Output = Q> + Clone + FromStr + Default,
     Q::Err: Display,
+    for<'a> &'a Q: PartialEq<&'a Q>,
 {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -21,7 +24,7 @@ where
         let mut prices: Vec<PriceAndQuantity<P, Q>> = Deserialize::deserialize(deserializer)?;
         let mut asks = Asks::new();
         for i in prices.drain(..) {
-            Update::insert(&mut asks, i)
+            Update::<AggregateOrCreate>::insert(&mut asks, i)
         }
         Ok(asks)
     }
