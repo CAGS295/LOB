@@ -26,6 +26,7 @@ use update_strategies::{AggregateOrCreate, ReplaceOrRemove, Strategy};
 pub trait Update<S: Strategy>: BinarySearchPredicate {
     type Tuple<Price, Quantity>;
 
+    //todo split trait
     fn index<P, Q>(&self, rhs: &Self::Tuple<P, Q>) -> usize
     where
         Self: Deref<Target = Vec<Self::Tuple<P, Q>>>,
