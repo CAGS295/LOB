@@ -11,7 +11,7 @@ mod deserialize;
 #[derive(PartialEq, Debug, Clone)]
 pub struct LimitOrderBook {
     #[serde(alias = "lastUpdateId")]
-    update_id: usize,
+    pub update_id: usize,
     bids: Bids,
     asks: Asks,
 }
@@ -38,11 +38,11 @@ impl LimitOrderBook {
 #[derive(PartialEq, Debug, Clone, Default)]
 pub struct DepthUpdate {
     #[serde(alias = "E")]
-    timestamp: usize,
+    pub timestamp: usize,
     #[serde(alias = "U")]
-    first_update_id: usize,
+    pub first_update_id: usize,
     #[serde(alias = "u")]
-    last_update_id: usize,
+    pub last_update_id: usize,
     #[serde(alias = "b")]
     pub bids: Bids,
     #[serde(alias = "a")]
