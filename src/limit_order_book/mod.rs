@@ -8,7 +8,7 @@ use serde::Deserialize;
 mod deserialize;
 
 #[cfg_attr(feature = "serde", derive(Deserialize))]
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug, Clone, Default)]
 pub struct LimitOrderBook {
     #[serde(alias = "lastUpdateId")]
     pub update_id: usize,
