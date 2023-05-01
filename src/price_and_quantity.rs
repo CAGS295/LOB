@@ -4,7 +4,7 @@ use std::fmt::{self, Display};
 use std::{marker::PhantomData, ops::Add, str::FromStr};
 
 #[cfg_attr(feature = "serde", derive(Deserialize), derive(Serialize))]
-#[derive(Clone, Debug, PartialEq, Default)]
+#[derive(Copy, Clone, Debug, PartialEq, Default)]
 ///Careful, this struct manually implements [Add] which in this context, is not commutative. It adds quantity while copying the rhs' price.
 /// If prices are not equal, it is also not associative; Adding quantities from different price levels is not a sound operation.
 pub struct PriceAndQuantity<P, Q>(
