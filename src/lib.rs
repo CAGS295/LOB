@@ -4,8 +4,8 @@ pub mod limit_order_book;
 pub mod ops;
 mod price_and_quantity;
 
-use asks::Asks;
-use bids::Bids;
+pub use asks::Asks;
+pub use bids::Bids;
 pub use limit_order_book::{DepthUpdate, LimitOrderBook};
 pub use price_and_quantity::PriceAndQuantity;
 
