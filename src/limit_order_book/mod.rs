@@ -1,10 +1,14 @@
 use super::{Asks, Bids};
 use crate::ops::{update_strategies::ReplaceOrRemove, Update};
 use crate::PriceAndQuantity;
+#[cfg(feature = "event")]
+use event::Event;
 #[cfg(feature = "serde")]
 use serde::Deserialize;
 
 mod deserialize;
+#[cfg(feature = "event")]
+pub mod event;
 
 #[cfg(feature = "grpc")]
 pub mod protos {
@@ -129,8 +133,9 @@ impl LimitOrderBook {
 #[cfg_attr(feature = "serde", derive(Deserialize))]
 #[derive(PartialEq, Debug, Clone, Default)]
 pub struct DepthUpdate {
-    #[serde(alias = "E")]
-    pub timestamp: u64,
+    #[cfg(feature = "event")]
+    #[serde(flatten)]
+    pub event: Event,
     #[serde(alias = "U")]
     pub first_update_id: u64,
     #[serde(alias = "u")]

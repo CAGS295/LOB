@@ -14,6 +14,11 @@ tonic = { version = "*", optional = true }
 [features]
 default = ["serde", "grpc"]
 grpc = ["prost", "tonic"]
+event = []
+event-id = ["event"]
+event-symbol = ["event"]
+event-time = ["event"]
+
 
 [build-dependencies]
 tonic-build = "*"

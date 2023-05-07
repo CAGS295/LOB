@@ -1,5 +1,7 @@
 #[cfg(test)]
 mod test {
+    #[cfg(feature = "event")]
+    use crate::limit_order_book::event::Event;
     use crate::DepthUpdate;
     use crate::LimitOrderBook;
     use crate::PriceAndQuantity;
@@ -82,7 +84,15 @@ mod test {
         "#;
         let book: DepthUpdate = serde_json::from_str(update).unwrap();
         let expected = DepthUpdate {
-            timestamp: 123456789,
+            #[cfg(feature = "event")]
+            event: Event {
+                #[cfg(feature = "event-time")]
+                time: 123456789,
+                #[cfg(feature = "event-id")]
+                id: "depthUpdate".to_string(),
+                #[cfg(feature = "event-symbol")]
+                symbol: "BNBBTC".to_string(),
+            },
             first_update_id: 157,
             last_update_id: 160,
             bids: vec![
