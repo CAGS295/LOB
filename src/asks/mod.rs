@@ -9,6 +9,7 @@ use super::{
 use crate::ops::{update_strategies::Strategy, BinarySearchPredicate};
 #[cfg(feature = "serde")]
 use serde::Serialize;
+use std::fmt::Display;
 use std::ops::{Add, Deref, DerefMut};
 
 #[cfg_attr(feature = "serde", derive(Serialize))]
@@ -18,6 +19,25 @@ pub struct Asks<P = f64, Q = f64>(Vec<PriceAndQuantity<P, Q>>);
 impl<P, Q> From<Vec<PriceAndQuantity<P, Q>>> for Asks<P, Q> {
     fn from(value: Vec<PriceAndQuantity<P, Q>>) -> Self {
         Self(value)
+    }
+}
+
+impl<P, Q> Display for Asks<P, Q>
+where
+    P: Display,
+    Q: Display,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[")?;
+        for (i, p) in self.0.iter().enumerate() {
+            write!(f, "{}", p)?;
+            if i < self.0.len() - 1 {
+                write!(f, ", ")?;
+            }
+        }
+
+        write!(f, "]")?;
+        Ok(())
     }
 }
 

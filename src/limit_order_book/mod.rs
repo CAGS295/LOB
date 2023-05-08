@@ -5,6 +5,7 @@ use crate::PriceAndQuantity;
 use event::Event;
 #[cfg(feature = "serde")]
 use serde::Deserialize;
+use std::fmt::Display;
 
 mod deserialize;
 #[cfg(feature = "event")]
@@ -130,6 +131,16 @@ impl LimitOrderBook {
     }
 }
 
+impl Display for LimitOrderBook {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "update_id: {}, bids: {}, asks:{}",
+            self.update_id, self.bids, self.asks
+        )
+    }
+}
+
 #[cfg_attr(feature = "serde", derive(Deserialize))]
 #[derive(PartialEq, Debug, Clone, Default)]
 pub struct DepthUpdate {
@@ -144,4 +155,18 @@ pub struct DepthUpdate {
     pub bids: Bids,
     #[serde(alias = "a")]
     pub asks: Asks,
+}
+
+impl Display for DepthUpdate {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        #[cfg(feature = "event")]
+        write!(f, "{}, ", self.event)?;
+        write!(
+            f,
+            "Updates: [{},{}], ",
+            self.first_update_id, self.last_update_id
+        )?;
+        write!(f, "bids: {} ", self.bids)?;
+        write!(f, "asks: {}", self.asks)
+    }
 }

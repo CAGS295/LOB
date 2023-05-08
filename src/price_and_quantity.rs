@@ -16,6 +16,16 @@ pub struct PriceAndQuantity<P, Q>(
     pub Q,
 );
 
+impl<P, Q> Display for PriceAndQuantity<P, Q>
+where
+    P: Display,
+    Q: Display,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}:{}", self.0, self.1)
+    }
+}
+
 pub trait Price {
     type P;
     fn to_ref(&self) -> &Self::P;
