@@ -16,7 +16,6 @@ syntax = "proto3";
 
 package protos;
 
-import "google/protobuf/empty.proto";
 
 message LimitOrderBook {
   uint64 update_id = 1;
@@ -37,6 +36,10 @@ message PriceAndQuantity {
   double quantity = 2;
 }
 
+message Pair {
+  string pair = 1;
+}
+
 service LimitOrderBookService {
-  rpc GetLimitOrderBook (google.protobuf.Empty) returns (LimitOrderBook);
+  rpc GetLimitOrderBook (Pair) returns (LimitOrderBook);
 }
