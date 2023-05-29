@@ -90,6 +90,7 @@ pub mod protos {
     }
 }
 
+#[cfg_attr(feature = "codec", derive(crate::Encode, crate::Decode))]
 #[cfg_attr(feature = "serde", derive(Deserialize))]
 #[derive(PartialEq, Clone, Debug, Default)]
 pub struct LimitOrderBook {

@@ -6,6 +6,8 @@ mod price_and_quantity;
 
 pub use asks::Asks;
 pub use bids::Bids;
+#[cfg(feature = "codec")]
+pub use codec::{Decode, Encode};
 pub use limit_order_book::{DepthUpdate, LimitOrderBook};
 pub use price_and_quantity::PriceAndQuantity;
 

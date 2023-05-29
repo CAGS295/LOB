@@ -10,6 +10,7 @@ use std::{
     ops::{Add, Deref, DerefMut},
 };
 
+#[cfg_attr(feature = "codec", derive(crate::Encode, crate::Decode))]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 #[derive(PartialEq, Clone, Debug, Default)]
 pub struct Bids<P = f64, Q = f64>(Vec<PriceAndQuantity<P, Q>>);

@@ -10,9 +10,12 @@ serde = { version = "1", optional = true, features = ["derive"] }
 serde_json = "1.0.96"
 prost = { version = "*", optional = true }
 tonic = { version = "*", optional = true }
+codec = { package = "parity-scale-codec", version = "3.5.0", features = [
+    "derive",
+], optional = true }
 
 [features]
-default = ["serde", "grpc"]
+default = ["serde", "grpc", "codec"]
 grpc = ["prost", "tonic"]
 event = []
 event-id = ["event"]

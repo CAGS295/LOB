@@ -3,6 +3,7 @@ use serde::{de, de::Visitor, Deserialize, Deserializer, Serialize};
 use std::fmt::{self, Display};
 use std::{marker::PhantomData, ops::Add, str::FromStr};
 
+#[cfg_attr(feature = "codec", derive(crate::Encode, crate::Decode))]
 #[cfg_attr(feature = "serde", derive(Deserialize), derive(Serialize))]
 #[derive(Copy, Clone, Debug, PartialEq, Default)]
 ///Careful, this struct manually implements [Add] which in this context, is not commutative. It adds quantity while copying the rhs' price.
