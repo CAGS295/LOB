@@ -20,7 +20,7 @@ pub mod protos {
     impl From<NativeLOB> for LimitOrderBook {
         fn from(og: NativeLOB) -> Self {
             LimitOrderBook {
-                update_id: og.update_id as u64,
+                update_id: og.update_id,
                 bids: Some(Bids {
                     bids: og
                         .bids
@@ -54,31 +54,25 @@ pub mod protos {
             } = book;
 
             let bids: super::Bids = bids
-                .map_or_else(
-                    || vec![],
-                    |bids| {
-                        bids.bids
-                            .into_iter()
-                            .map(|PriceAndQuantity { price, quantity }| {
-                                super::PriceAndQuantity(price, quantity)
-                            })
-                            .collect()
-                    },
-                )
+                .map_or_else(std::vec::Vec::new, |bids| {
+                    bids.bids
+                        .into_iter()
+                        .map(|PriceAndQuantity { price, quantity }| {
+                            super::PriceAndQuantity(price, quantity)
+                        })
+                        .collect()
+                })
                 .into();
 
             let asks: super::Asks = asks
-                .map_or_else(
-                    || vec![],
-                    |asks| {
-                        asks.asks
-                            .into_iter()
-                            .map(|PriceAndQuantity { price, quantity }| {
-                                super::PriceAndQuantity(price, quantity)
-                            })
-                            .collect()
-                    },
-                )
+                .map_or_else(std::vec::Vec::new, |asks| {
+                    asks.asks
+                        .into_iter()
+                        .map(|PriceAndQuantity { price, quantity }| {
+                            super::PriceAndQuantity(price, quantity)
+                        })
+                        .collect()
+                })
                 .into();
 
             Self {
