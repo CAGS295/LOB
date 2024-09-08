@@ -2,7 +2,7 @@
 mod deserializer;
 
 use super::{ops::Update, PriceAndQuantity};
-use crate::ops::{update_strategies::Strategy, BinarySearchPredicate, Updatable};
+use crate::ops::{update_strategies::Strategy, BinarySearchPredicate};
 #[cfg(feature = "serde")]
 use serde::Serialize;
 use std::{
@@ -79,8 +79,6 @@ impl<P, Q> BinarySearchPredicate for Bids<P, Q> {
         rhs > lhs
     }
 }
-
-impl<P, Q> Updatable for Bids<P, Q> {}
 
 #[cfg(test)]
 mod test {

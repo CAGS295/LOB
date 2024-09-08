@@ -22,7 +22,7 @@ use update_strategies::{AggregateOrCreate, ReplaceOrRemove, Strategy};
 
 ///This is a trait for an aggregated insert operation.
 /// It defines a GAT that takes two type parameters Price and Quantity.
-/// Choose a [Strategy] to insert [Self::Tuple<Price, Quantity>].
+/// Choose a [`Strategy`] to insert [Self::Tuple<Price, Quantity>].
 pub trait Update<S: Strategy>: BinarySearchPredicate {
     type Tuple<Price, Quantity>;
 
@@ -52,14 +52,9 @@ pub trait BinarySearchPredicate {
     fn partition_predicate<P: PartialOrd>(lhs: &P, rhs: &P) -> bool;
 }
 
-/// Implement this trait for a type that you wish to use [`Strategy`] to perform certain well known operations.
-/// So far the type must be backed by a Vector and support partition with a predicate.
-/// See [`Update`] for more info.
-pub trait Updatable {}
-
 impl<T> Update<ReplaceOrRemove> for T
 where
-    T: Updatable + BinarySearchPredicate,
+    T: BinarySearchPredicate,
 {
     type Tuple<Price, Quantity> = PriceAndQuantity<Price, Quantity>;
 
@@ -114,7 +109,7 @@ where
 
 impl<T> Update<AggregateOrCreate> for T
 where
-    T: Updatable + BinarySearchPredicate,
+    T: BinarySearchPredicate,
 {
     type Tuple<Price, Quantity> = PriceAndQuantity<Price, Quantity>;
 

@@ -1,7 +1,6 @@
 #[cfg(feature = "serde")]
 mod deserialize;
 
-use super::ops::Updatable;
 use super::{
     ops::{update_strategies::AggregateOrCreate, Update},
     PriceAndQuantity,
@@ -81,8 +80,6 @@ impl<P, Q> BinarySearchPredicate for Asks<P, Q> {
         rhs < lhs
     }
 }
-
-impl<P, Q> Updatable for Asks<P, Q> {}
 
 #[cfg(test)]
 mod test {
