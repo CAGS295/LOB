@@ -2,7 +2,7 @@ pub mod asks;
 pub mod bids;
 pub mod limit_order_book;
 pub mod ops;
-mod price_and_quantity;
+pub mod price_and_quantity;
 
 pub use asks::Asks;
 pub use bids::Bids;

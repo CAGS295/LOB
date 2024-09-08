@@ -32,9 +32,25 @@ pub trait Price {
     fn to_ref(&self) -> &Self::P;
 }
 
+impl Price for (f64, f64) {
+    type P = f64;
+
+    fn to_ref(&self) -> &Self::P {
+        &self.0
+    }
+}
+
 pub trait Quantity {
     type Q;
     fn to_ref(&self) -> &Self::Q;
+}
+
+impl Quantity for (f64, f64) {
+    type Q = f64;
+
+    fn to_ref(&self) -> &Self::Q {
+        &self.0
+    }
 }
 
 impl<P, Q> Price for PriceAndQuantity<P, Q> {
