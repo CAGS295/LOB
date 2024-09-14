@@ -165,3 +165,38 @@ impl Display for DepthUpdate {
         write!(f, "asks: {}", self.asks)
     }
 }
+
+impl DepthUpdate {
+    /// A valid update [a, b] should overlap or at least
+    /// not gap between the last update id and the new update range.
+    pub fn skip_update(&self, last_book_id: u64) -> bool {
+        let (a, b) = (self.first_update_id, self.last_update_id);
+        last_book_id + 1 < a || b + 1 < last_book_id
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::DepthUpdate;
+
+    #[test]
+    fn skip_update_works() {
+        let update = DepthUpdate {
+            first_update_id: 2,
+            last_update_id: 3,
+            ..Default::default()
+        };
+        // coming from the left there is a gap; skip.
+        assert!(update.skip_update(0));
+        // continuous coming from the left, pass
+        assert!(!update.skip_update(1));
+        // overlap coming from the left, pass
+        assert!(!update.skip_update(2));
+        // overlap coming from the right, pass
+        assert!(!update.skip_update(3));
+        //continuity coming for the right at the second bound; pass
+        assert!(!update.skip_update(4));
+        // gap coming from the right; skip
+        assert!(update.skip_update(5));
+    }
+}
