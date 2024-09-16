@@ -1,11 +1,12 @@
 #[cfg(feature = "serde")]
 mod deserialize;
 
+use crate::ops::{PartitionPredicate, Strategy};
+
 use super::{
     ops::{update_strategies::AggregateOrCreate, Update},
     PriceAndQuantity,
 };
-use crate::ops::{update_strategies::Strategy, BinarySearchPredicate};
 #[cfg(feature = "serde")]
 use serde::Serialize;
 use std::fmt::Display;
@@ -65,17 +66,18 @@ impl<P, Q> Asks<P, Q>
 where
     P: Clone + PartialOrd,
     Q: Clone + Add<Output = Q> + PartialEq + Default,
+    Q: Add<Q, Output = Q> + Copy,
 {
     pub fn add_ask<S>(&mut self, ask: PriceAndQuantity<P, Q>)
     where
         S: Strategy,
-        Self: Update<S, Tuple<P, Q> = PriceAndQuantity<P, Q>>,
+        Self: Update<S, Level = PriceAndQuantity<P, Q>>,
     {
-        Update::insert::<P, Q>(self, ask)
+        Update::process(self, ask)
     }
 }
 
-impl<P, Q> BinarySearchPredicate for Asks<P, Q> {
+impl<P, Q> PartitionPredicate for Asks<P, Q> {
     fn partition_predicate<Price: PartialOrd>(lhs: &Price, rhs: &Price) -> bool {
         rhs < lhs
     }

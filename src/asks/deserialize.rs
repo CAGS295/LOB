@@ -11,11 +11,11 @@ use std::str::FromStr;
 /// It uses the [AggregateOrCreate](super::AggregateOrCreate) strategy to fill the vec.
 impl<'de, P, Q> Deserialize<'de> for Asks<P, Q>
 where
-    P: Deserialize<'de> + PartialOrd + Clone + FromStr,
+    P: Deserialize<'de> + PartialOrd + FromStr,
     P::Err: Display,
-    Q: Deserialize<'de> + Add<Output = Q> + Clone + FromStr + Default,
     Q::Err: Display,
-    for<'a> &'a Q: PartialEq<&'a Q>,
+    Q: Deserialize<'de> + Add<Output = Q> + FromStr + Default + PartialEq,
+    Q: Add<Q, Output = Q> + Copy,
 {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -24,7 +24,7 @@ where
         let mut prices: Vec<PriceAndQuantity<P, Q>> = Deserialize::deserialize(deserializer)?;
         let mut asks = Asks::new();
         for i in prices.drain(..) {
-            Update::<AggregateOrCreate>::insert(&mut asks, i)
+            Update::<AggregateOrCreate>::process(&mut asks, i)
         }
         Ok(asks)
     }

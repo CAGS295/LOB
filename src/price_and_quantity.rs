@@ -41,7 +41,7 @@ impl Price for (f64, f64) {
 }
 
 pub trait Quantity {
-    type Q;
+    type Q: Add<Self::Q, Output = Self::Q> + Copy;
     fn to_ref(&self) -> &Self::Q;
 }
 
@@ -61,7 +61,10 @@ impl<P, Q> Price for PriceAndQuantity<P, Q> {
     }
 }
 
-impl<P, Q> Quantity for PriceAndQuantity<P, Q> {
+impl<P, Q> Quantity for PriceAndQuantity<P, Q>
+where
+    Q: Add<Q, Output = Q> + Copy,
+{
     type Q = Q;
 
     fn to_ref(&self) -> &Self::Q {

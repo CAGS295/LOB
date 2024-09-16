@@ -1,79 +1,71 @@
+use update_strategies::{AggregateOrCreate, ReplaceOrRemove};
+
 use crate::{
     price_and_quantity::{Price, Quantity},
     PriceAndQuantity,
 };
-use core::ops::{Add, Deref, DerefMut};
+use core::ops::DerefMut;
+use std::ops::Add;
 
-pub mod update_strategies {
-    pub trait Strategy {
-        //fn insert<I, P, Q>(prices: &mut Self, item: I);
-    }
-
-    impl Strategy for AggregateOrCreate {}
-    impl Strategy for ReplaceOrRemove {}
-    /// Inserts `Tuple` type into the vector or aggregates if it already exists.
-    pub struct AggregateOrCreate;
-
-    /// Replaces `Tuple` type into the vector or remove it if `Remove::remove()`.
-    pub struct ReplaceOrRemove;
-}
-
-use update_strategies::{AggregateOrCreate, ReplaceOrRemove, Strategy};
-
-///This is a trait for an aggregated insert operation.
-/// It defines a GAT that takes two type parameters Price and Quantity.
-/// Choose a [`Strategy`] to insert [Self::Tuple<Price, Quantity>].
-pub trait Update<S: Strategy>: BinarySearchPredicate {
-    type Tuple<Price, Quantity>;
-
-    fn index<P, Q>(&self, rhs: &Self::Tuple<P, Q>) -> usize
-    where
-        Self: Deref<Target = Vec<Self::Tuple<P, Q>>>,
-        Self::Tuple<P, Q>: Price<P = P>,
-        P: PartialOrd,
-    {
-        self.partition_point(|value| {
-            Self::partition_predicate(Price::to_ref(value), Price::to_ref(rhs))
-        })
-    }
-
-    /// The `partition_point` method is called on the vector to find the index at which the new `Tuple` should be inserted.
-    fn insert<P, Q>(prices: &mut Self, p_n_q: Self::Tuple<P, Q>)
-    where
-        Self: DerefMut<Target = Vec<Self::Tuple<P, Q>>>,
-        P: PartialOrd,
-        Self::Tuple<P, Q>: Clone + Price<P = P> + Quantity<Q = Q> + Add<Output = Self::Tuple<P, Q>>,
-        for<'a> &'a Q: PartialEq<&'a Q>,
-        Q: Default;
-}
-
-pub trait BinarySearchPredicate {
-    /// Defines the ordering for the inner vector, ascending or descending.
+pub trait PartitionPredicate {
+    /// Defines an ordering for the binary search partition.
     fn partition_predicate<P: PartialOrd>(lhs: &P, rhs: &P) -> bool;
 }
+pub mod update_strategies {
 
-impl<T> Update<ReplaceOrRemove> for T
-where
-    T: BinarySearchPredicate,
-{
-    type Tuple<Price, Quantity> = PriceAndQuantity<Price, Quantity>;
+    /// Inserts `Tuple` type into the vector or aggregates if it already exists.
+    pub enum AggregateOrCreate {
+        Aggregated,
+        Remove,
+        Create,
+    }
 
-    fn insert<P, Q>(prices: &mut Self, p_n_q: Self::Tuple<P, Q>)
+    pub enum ReplaceOrRemove {
+        Replace,
+        Remove,
+        Displace,
+        Noop,
+    }
+}
+
+// Defines how to assimilate a Level in an orderbook update.
+pub trait Strategy {
+    fn operation<Level: Price + Quantity>(value: &Level, level: Option<&Level>) -> Self
     where
-        Self: DerefMut<Target = Vec<Self::Tuple<P, Q>>>,
-        P: PartialOrd,
-        Self::Tuple<P, Q>: Clone + Price<P = P> + Quantity<Q = Q> + Add<Output = Self::Tuple<P, Q>>,
-        for<'a> &'a Q: PartialEq<&'a Q>,
-        Q: Default,
-    {
-        let index = <Self as Update<ReplaceOrRemove>>::index(prices, &p_n_q);
+        <Level as Quantity>::Q: Default,
+        <Level as Price>::P: PartialEq,
+        <Level as Quantity>::Q: PartialEq;
+}
 
-        enum Operator {
-            Replace,
-            Remove,
-            Insert,
-            Noop,
+impl Strategy for AggregateOrCreate {
+    fn operation<Level: Price + Quantity>(new: &Level, level: Option<&Level>) -> Self
+    where
+        <Level as Quantity>::Q: Default + Copy + PartialEq,
+        <Level as Price>::P: PartialEq,
+    {
+        let p = Price::to_ref;
+        let q = Quantity::to_ref;
+
+        match level {
+            Some(old) if p(old) == p(new) && *q(old) + *q(new) != Level::Q::default() => {
+                Self::Aggregated
+            }
+            Some(old) if p(old) != p(new) => Self::Create,
+            Some(_) => Self::Remove,
+            None => Self::Create,
         }
+    }
+}
+
+impl Strategy for ReplaceOrRemove {
+    fn operation<Level: Price + Quantity>(value: &Level, level: Option<&Level>) -> Self
+    where
+        <Level as Quantity>::Q: Default,
+        <Level as Price>::P: PartialEq,
+        <Level as Quantity>::Q: PartialEq,
+    {
+        let p = Price::to_ref;
+        let q = Quantity::to_ref;
 
         // found,
         //      replace if same price and not default
@@ -82,65 +74,114 @@ where
         //      noop if new price and default
         // not found, insert if not default,
 
-        let p = Price::to_ref;
-        let q = Quantity::to_ref;
-
-        let operator = match prices.get_mut(index) {
-            Some(bin) if p(bin) == p(&p_n_q) && &Q::default() != q(&p_n_q) => Operator::Replace,
-            Some(bin) if p(bin) == p(&p_n_q) => Operator::Remove,
-            Some(_) if &Q::default() != q(&p_n_q) => Operator::Insert,
-            Some(_) => Operator::Noop,
-            None if &Q::default() != q(&p_n_q) => Operator::Insert,
-            None => Operator::Noop,
-        };
-
-        match operator {
-            Operator::Replace => {
-                prices[index] = p_n_q;
+        match level {
+            Some(level) if p(level) == p(value) && &Level::Q::default() != q(value) => {
+                ReplaceOrRemove::Replace
             }
-            Operator::Remove => {
-                prices.remove(index);
-            }
-            Operator::Insert => prices.insert(index, p_n_q),
-            Operator::Noop => {}
+            Some(bin) if p(bin) == p(value) => ReplaceOrRemove::Remove,
+            Some(_) if &Level::Q::default() != q(value) => ReplaceOrRemove::Displace,
+            Some(_) => ReplaceOrRemove::Noop,
+            None if &Level::Q::default() != q(value) => ReplaceOrRemove::Displace,
+            None => ReplaceOrRemove::Noop,
         }
     }
 }
 
-impl<T> Update<AggregateOrCreate> for T
-where
-    T: BinarySearchPredicate,
-{
-    type Tuple<Price, Quantity> = PriceAndQuantity<Price, Quantity>;
+pub trait Update<S: Strategy>: PartitionPredicate {
+    type Level: Price + Quantity;
+    type Key;
 
-    fn insert<P, Q>(prices: &mut Self, p_n_q: Self::Tuple<P, Q>)
+    // This method should return a mutable reference to the new level's slot, creating preemptively if not found.
+    fn entry(&mut self, level_update: &Self::Level) -> (Self::Key, Option<&Self::Level>)
     where
-        Self: DerefMut<Target = Vec<Self::Tuple<P, Q>>>,
-        P: PartialOrd,
-        Self::Tuple<P, Q>: Clone + Price<P = P> + Quantity<Q = Q> + Add<Output = Self::Tuple<P, Q>>,
-        for<'a> &'a Q: PartialEq<&'a Q>,
-        Q: Default,
+        <Self::Level as Price>::P: PartialOrd;
+
+    /// process the Level;
+    fn process(&mut self, level_update: Self::Level)
+    where
+        <Self::Level as Price>::P: PartialOrd,
+        <Self::Level as Quantity>::Q: Default + PartialEq,
     {
-        let index = <Self as Update<ReplaceOrRemove>>::index(prices, &p_n_q);
+        let (key, entry) = Self::entry(self, &level_update);
 
-        let (p_n_q, replace) = prices.get_mut(index).map_or_else(
-            || (p_n_q.clone(), false),
-            |agg| {
-                let p_n_q = p_n_q.clone();
-                //same price bin
-                if Price::to_ref(agg) == Price::to_ref(&p_n_q) {
-                    //aggregate quantity
-                    (agg.clone().add(p_n_q), true)
-                } else {
-                    (p_n_q, false)
-                }
-            },
-        );
+        let operator = S::operation(&level_update, entry);
 
-        if replace {
-            prices[index] = p_n_q;
-        } else {
-            prices.insert(index, p_n_q);
+        self.digest_operation(operator, &key, level_update);
+    }
+
+    fn digest_operation(&mut self, operator: S, key: &Self::Key, level_update: Self::Level);
+}
+
+impl<T, P, Q> Update<ReplaceOrRemove> for T
+where
+    T: PartitionPredicate + DerefMut<Target = Vec<PriceAndQuantity<P, Q>>>,
+    Q: Add<Q, Output = Q> + Copy,
+{
+    type Level = PriceAndQuantity<P, Q>;
+    type Key = usize;
+
+    fn entry(&mut self, rhs: &Self::Level) -> (Self::Key, Option<&Self::Level>)
+    where
+        <Self::Level as Price>::P: PartialOrd,
+    {
+        let index = self.partition_point(|value| {
+            Self::partition_predicate(Price::to_ref(value), Price::to_ref(rhs))
+        });
+        (index, self.get(index))
+    }
+
+    fn digest_operation(
+        &mut self,
+        operator: ReplaceOrRemove,
+        key: &usize,
+        level_update: Self::Level,
+    ) {
+        match operator {
+            ReplaceOrRemove::Replace => {
+                self[*key] = level_update;
+            }
+            ReplaceOrRemove::Remove => {
+                self.remove(*key);
+            }
+            ReplaceOrRemove::Displace => {
+                self.insert(*key, level_update);
+            }
+            ReplaceOrRemove::Noop => {}
+        }
+    }
+}
+
+impl<T, P, Q> Update<AggregateOrCreate> for T
+where
+    T: PartitionPredicate + DerefMut<Target = Vec<PriceAndQuantity<P, Q>>>,
+    Q: Add<Q, Output = Q> + Copy,
+{
+    type Level = PriceAndQuantity<P, Q>;
+    type Key = usize;
+
+    fn entry(&mut self, rhs: &Self::Level) -> (Self::Key, Option<&Self::Level>)
+    where
+        <Self::Level as Price>::P: PartialOrd,
+    {
+        let index = self.partition_point(|value| {
+            Self::partition_predicate(Price::to_ref(value), Price::to_ref(rhs))
+        });
+        (index, self.get(index))
+    }
+
+    fn digest_operation(&mut self, operator: AggregateOrCreate, key: &usize, new: Self::Level) {
+        match operator {
+            AggregateOrCreate::Aggregated => {
+                let level = self.get_mut(*key).unwrap();
+                let q = level.1 + new.1;
+                level.1 = q;
+            }
+            AggregateOrCreate::Remove => {
+                self.remove(*key);
+            }
+            AggregateOrCreate::Create => {
+                self.insert(*key, new);
+            }
         }
     }
 }

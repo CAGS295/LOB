@@ -104,11 +104,11 @@ impl LimitOrderBook {
     }
 
     pub fn add_bid(&mut self, bid: PriceAndQuantity<f64, f64>) {
-        Update::<ReplaceOrRemove>::insert(&mut self.bids, bid)
+        Update::<ReplaceOrRemove>::process(&mut self.bids, bid)
     }
 
     pub fn add_ask(&mut self, ask: PriceAndQuantity<f64, f64>) {
-        Update::<ReplaceOrRemove>::insert(&mut self.asks, ask)
+        Update::<ReplaceOrRemove>::process(&mut self.asks, ask)
     }
 
     // Careful, This is a cheap extend and wont respect Ordering.

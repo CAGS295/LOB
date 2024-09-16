@@ -1,8 +1,9 @@
 #[cfg(feature = "serde")]
 mod deserializer;
 
+use crate::ops::{PartitionPredicate, Strategy};
+
 use super::{ops::Update, PriceAndQuantity};
-use crate::ops::{update_strategies::Strategy, BinarySearchPredicate};
 #[cfg(feature = "serde")]
 use serde::Serialize;
 use std::{
@@ -62,19 +63,19 @@ impl<P, Q> Bids<P, Q> {
 
 impl<P, Q> Bids<P, Q>
 where
-    P: Clone + PartialOrd,
-    Q: Clone + Add<Output = Q> + Default + PartialEq,
+    P: PartialOrd,
+    Q: Add<Output = Q> + Default + PartialEq + Copy,
 {
     pub fn add_bid<S>(&mut self, bid: PriceAndQuantity<P, Q>)
     where
         S: Strategy,
-        Self: Update<S, Tuple<P, Q> = PriceAndQuantity<P, Q>>,
+        Self: Update<S, Level = PriceAndQuantity<P, Q>>,
     {
-        Update::insert::<P, Q>(self, bid)
+        Update::process(self, bid)
     }
 }
 
-impl<P, Q> BinarySearchPredicate for Bids<P, Q> {
+impl<P, Q> PartitionPredicate for Bids<P, Q> {
     fn partition_predicate<Price: PartialOrd>(lhs: &Price, rhs: &Price) -> bool {
         rhs > lhs
     }
@@ -118,10 +119,34 @@ mod test {
     }
 
     #[test]
-    fn insert_with_strategy_aggregate_or_create() {
+    fn aggregate() {
         let mut bids = Bids::new();
         bids.add_bid::<AggregateOrCreate>(PriceAndQuantity(1., 1));
         bids.add_bid::<AggregateOrCreate>(PriceAndQuantity(1., 2));
         assert_eq!(bids.0, [PriceAndQuantity(1., 3)]);
+    }
+
+    #[test]
+    fn aggregate_displace() {
+        let mut bids = Bids::new();
+        bids.add_bid::<AggregateOrCreate>(PriceAndQuantity(1., 1));
+        bids.add_bid::<AggregateOrCreate>(PriceAndQuantity(2., 2));
+        assert_eq!(bids.0, [PriceAndQuantity(1., 1), PriceAndQuantity(2., 2)]);
+    }
+
+    #[test]
+    fn aggregate_displace_back() {
+        let mut bids = Bids::new();
+        bids.add_bid::<AggregateOrCreate>(PriceAndQuantity(1., 1));
+        bids.add_bid::<AggregateOrCreate>(PriceAndQuantity(0., 2));
+        assert_eq!(bids.0, [PriceAndQuantity(0., 2), PriceAndQuantity(1., 1)]);
+    }
+
+    #[test]
+    fn aggregate_remove() {
+        let mut bids = Bids::new();
+        bids.add_bid::<AggregateOrCreate>(PriceAndQuantity(1., 1));
+        bids.add_bid::<AggregateOrCreate>(PriceAndQuantity(1., -1));
+        assert_eq!(bids.0, []);
     }
 }
